@@ -50,84 +50,100 @@ document.addEventListener('DOMContentLoaded', () => {
 // CHARGEMENT DES DONNÉES
 // ============================================
 
+// Le JSON non importe tient en quelques centaines de lignes : on le
+// charge une seule fois et on pagine cote client. Cela evite de jongler
+// avec deux paginations serveur decalees l'une par rapport a l'autre.
+let cacheJSON = null;
+
+async function chargerJSON() {
+    if (cacheJSON) return cacheJSON;
+    const rep  = await fetch(`${API}/json/etudiants?page=1&limite=1000`);
+    const data = await rep.json();
+    cacheJSON = data.data;
+    return cacheJSON;
+}
+
+function invaliderCacheJSON() {
+    cacheJSON = null;
+}
+
+function filtrerJSON(liste) {
+    let resultat = liste;
+    if (etat.recherche) {
+        const terme = etat.recherche.toLowerCase();
+        resultat = resultat.filter(e =>
+            e.nom.toLowerCase().includes(terme)    ||
+            e.prenom.toLowerCase().includes(terme) ||
+            e.numero.toLowerCase().includes(terme) ||
+            e.code.toLowerCase().includes(terme)
+        );
+    }
+    if (etat.classe) {
+        resultat = resultat.filter(e => e.classe === etat.classe);
+    }
+    return resultat;
+}
+
 async function chargerDonnees() {
     afficherChargement(true);
 
     try {
-        const params = new URLSearchParams({
-            page:   etat.page,
-            limite: etat.limite
-        });
-        if (etat.recherche) params.append('recherche', etat.recherche);
-        if (etat.classe)    params.append('classe',    etat.classe);
-        if (etat.archive)   params.append('archive',   'true');
-        if (etat.validite)  params.append('valide',    etat.validite);
+        // Les archives et la validite sont des notions propres a la base :
+        // le JSON n'en a pas, on ne l'interroge donc pas dans ces cas.
+        const jsonPertinent = !etat.archive && !etat.validite;
+        const offset        = (etat.page - 1) * etat.limite;
 
-        const repDB  = await fetch(`${API}/etudiants?${params}`);
-        const dataDB = await repDB.json();
+        let etudiants = [];
+        let total     = 0;
 
-        let etudiants  = dataDB.data;
-        let total_db   = dataDB.pagination.total;
-        let totalPages = dataDB.pagination.total_pages;
+        if (etat.source === 'json' && jsonPertinent) {
+            // ── Source JSON uniquement ──
+            const tout = filtrerJSON(await chargerJSON());
+            total      = tout.length;
+            etudiants  = tout.slice(offset, offset + etat.limite);
 
-        // Compléter avec JSON si nécessaire
-        if (etudiants.length < etat.limite
-            && !etat.archive
-            && etat.source !== 'db'
-            && !etat.validite) {
-
-            const manquants     = etat.limite - etudiants.length;
-            const offset_global = (etat.page - 1) * etat.limite;
-            const offset_json   = Math.max(
-                0, offset_global - total_db
-            );
-            const page_json     = Math.floor(
-                offset_json / manquants
-            ) + 1;
-
-            const repJSON  = await fetch(
-                `${API}/json/etudiants` +
-                `?page=${page_json}&limite=${manquants}`
-            );
-            const dataJSON = await repJSON.json();
-
-            let jsonFiltres = dataJSON.data;
-
-            if (etat.recherche) {
-                const terme = etat.recherche.toLowerCase();
-                jsonFiltres = jsonFiltres.filter(e =>
-                    e.nom.toLowerCase().includes(terme)    ||
-                    e.prenom.toLowerCase().includes(terme) ||
-                    e.numero.toLowerCase().includes(terme) ||
-                    e.code.toLowerCase().includes(terme)
-                );
-            }
-            if (etat.classe) {
-                jsonFiltres = jsonFiltres.filter(
-                    e => e.classe === etat.classe
-                );
-            }
-
-            etudiants = [...etudiants, ...jsonFiltres];
-
-            const total_json = dataJSON.pagination.total;
-            const total      = total_db + total_json;
-            totalPages       = Math.ceil(total / etat.limite) || 1;
-
-            etat.total      = total;
-            etat.totalPages = totalPages;
+        } else if (etat.source === 'json') {
+            total     = 0;
+            etudiants = [];
 
         } else {
-            etat.total      = total_db;
-            etat.totalPages = totalPages;
+            // ── Base de donnees, eventuellement completee par le JSON ──
+            const params = new URLSearchParams({
+                page:   etat.page,
+                limite: etat.limite
+            });
+            if (etat.recherche) params.append('recherche', etat.recherche);
+            if (etat.classe)    params.append('classe',    etat.classe);
+            if (etat.archive)   params.append('archive',   'true');
+            if (etat.validite)  params.append('valide',    etat.validite);
+
+            const repDB  = await fetch(`${API}/etudiants?${params}`);
+            const dataDB = await repDB.json();
+
+            const totalDB = dataDB.pagination.total;
+            etudiants     = dataDB.data;
+            total         = totalDB;
+
+            if (etat.source !== 'db' && jsonPertinent) {
+                const toutJSON = filtrerJSON(await chargerJSON());
+                total = totalDB + toutJSON.length;
+
+                // La liste globale est la concatenation DB puis JSON :
+                // on reprend le JSON la ou la base s'arrete, ce qui evite
+                // le doublon et le trou a la frontiere entre les deux.
+                const offsetJSON = Math.max(0, offset - totalDB);
+                const restant    = etat.limite - etudiants.length;
+                if (restant > 0) {
+                    etudiants = [
+                        ...etudiants,
+                        ...toutJSON.slice(offsetJSON, offsetJSON + restant)
+                    ];
+                }
+            }
         }
 
-        // Filtrer par source si demandé
-        if (etat.source === 'db') {
-            etudiants = etudiants.filter(e => e.origine === 'DB');
-        } else if (etat.source === 'json') {
-            etudiants = etudiants.filter(e => e.origine === 'JSON');
-        }
+        etat.total      = total;
+        etat.totalPages = Math.ceil(total / etat.limite) || 1;
 
         afficherTableau(etudiants);
         afficherPagination();
@@ -143,11 +159,17 @@ async function chargerDonnees() {
 
 async function chargerClasses() {
     try {
-        const rep  = await fetch(`${API}/etudiants?page=1&limite=500`);
-        const data = await rep.json();
-        const classes = [
-            ...new Set(data.data.map(e => e.libelle_classe))
-        ].sort();
+        const [repDB, toutJSON] = await Promise.all([
+            fetch(`${API}/etudiants?page=1&limite=500`).then(r => r.json()),
+            chargerJSON()
+        ]);
+
+        // Les classes presentes uniquement dans le JSON doivent aussi
+        // etre proposees, sinon le filtre ignore une partie des donnees.
+        const classes = [...new Set([
+            ...repDB.data.map(e => e.libelle_classe),
+            ...toutJSON.map(e => e.classe)
+        ])].filter(Boolean).sort();
 
         const select = document.getElementById('filtreClasse');
         classes.forEach(c => {
@@ -378,6 +400,9 @@ async function importerSelection() {
         );
         etat.selection.clear();
         majBoutonImport();
+        // Les etudiants importes quittent le JSON pour la base :
+        // le cache doit etre recharge, sinon ils apparaitraient deux fois.
+        invaliderCacheJSON();
         chargerDonnees();
     } catch (err) {
         afficherToast("Erreur lors de l'import", 'error');
