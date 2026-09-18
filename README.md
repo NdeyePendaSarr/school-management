@@ -78,7 +78,7 @@ Le script `backend/sql/init.sql` crée les tables et insère les 6 matières et 
 ### 1. Cloner le dépôt
 
 ```bash
-git clone https://github.com/NdeyePendaSarr/Projet_FastAPI_Dev_Data.git
+git clone https://github.com/NdeyePendaSarr/school-management.git
 cd Projet_FastAPI_Dev_Data
 ```
 
