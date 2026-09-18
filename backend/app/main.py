@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from app.routes import etudiants, stats, import_json
+from app.config import CORS_ORIGINS
 import os
 
 app = FastAPI(
@@ -16,11 +17,14 @@ app = FastAPI(
 )
 
 # Configuration CORS
+# Liste blanche pilotée par la variable d'environnement CORS_ORIGINS.
+# allow_origins=["*"] avec allow_credentials=True est refusé par les
+# navigateurs et ouvre inutilement l'API.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "OPTIONS"],
     allow_headers=["*"],
 )
 

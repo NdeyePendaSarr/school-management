@@ -1,9 +1,27 @@
-const API = 'http://localhost:8000/api/v1';
+// URL relative : le backend FastAPI sert deja le frontend,
+// l'application fonctionne donc sur n'importe quel domaine.
+const API = '/api/v1';
 
 Chart.defaults.color       = '#a8a29e';
 Chart.defaults.borderColor = '#f0ede8';
 Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
 Chart.defaults.font.size   = 12;
+
+const etiquettesValeurs = {
+    id: 'etiquettesValeurs',
+    afterDatasetsDraw(chart) {
+        const { ctx } = chart;
+        ctx.save();
+        ctx.font = "600 11px 'Plus Jakarta Sans', sans-serif";
+        ctx.fillStyle = '#57534e';
+        ctx.textBaseline = 'middle';
+        chart.getDatasetMeta(0).data.forEach((barre, i) => {
+            const valeur = chart.data.datasets[0].data[i];
+            ctx.fillText(Number(valeur).toFixed(2), barre.x + 8, barre.y);
+        });
+        ctx.restore();
+    }
+};
 
 const PALETTE = [
     '#2563eb','#0891b2','#059669','#7c3aed',
@@ -38,43 +56,43 @@ function afficherKPI(data) {
         {
             label:  'Total général',
             valeur: data.total_general,
-            icone:  '👥',
+            icone:  'fa-solid fa-users',
             color:  '#2563eb'
         },
         {
             label:  'Base de données',
             valeur: data.total_db,
-            icone:  '🗄',
+            icone:  'fa-solid fa-database',
             color:  '#0891b2'
         },
         {
             label:  'Fichier JSON',
             valeur: data.total_json,
-            icone:  '📄',
+            icone:  'fa-solid fa-file-code',
             color:  '#d97706'
         },
         {
             label:  'Actifs',
             valeur: data.total_actifs,
-            icone:  '✓',
+            icone:  'fa-solid fa-user-check',
             color:  '#059669'
         },
         {
             label:  'Archivés',
             valeur: data.total_archives,
-            icone:  '📦',
+            icone:  'fa-solid fa-box-archive',
             color:  '#7c3aed'
         },
         {
             label:  'Valides',
             valeur: data.total_valides,
-            icone:  '✔',
+            icone:  'fa-solid fa-circle-check',
             color:  '#16a34a'
         },
         {
             label:  'Invalides',
             valeur: data.total_invalides,
-            icone:  '✗',
+            icone:  'fa-solid fa-circle-exclamation',
             color:  '#dc2626'
         }
     ];
@@ -83,7 +101,7 @@ function afficherKPI(data) {
         kpis.map(k => `
             <div class="kpi-card"
                  style="--kpi-color:${k.color}">
-                <span class="kpi-icon">${k.icone}</span>
+                <span class="kpi-icon"><i class="${k.icone}"></i></span>
                 <div class="kpi-value"
                      style="color:${k.color}">${k.valeur}</div>
                 <div class="kpi-label">${k.label}</div>
@@ -119,8 +137,8 @@ function afficherChartClasses(classes) {
             labels:   data.map(c => c.libelle_classe),
             datasets: [{
                 data:            data.map(c => c.nb_etudiants),
-                backgroundColor: PALETTE.map(c => c + '22'),
-                borderColor:     PALETTE,
+                backgroundColor: '#2563eb22',
+                borderColor:     '#2563eb',
                 borderWidth:     1.5,
                 borderRadius:    6,
                 borderSkipped:   false
@@ -128,6 +146,7 @@ function afficherChartClasses(classes) {
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             plugins: {
                 legend:  { display: false },
                 tooltip: tooltipOpts()
@@ -156,6 +175,7 @@ function afficherChartSources(data) {
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             cutout: '68%',
             plugins: {
                 legend: {
@@ -190,6 +210,7 @@ function afficherChartValidite(data) {
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             plugins: {
                 legend: {
                     display:  true,
@@ -230,6 +251,7 @@ function afficherChartMoyennes(classes) {
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             plugins: {
                 legend:  { display: false },
                 tooltip: tooltipOpts()
@@ -247,9 +269,11 @@ function afficherChartMoyennes(classes) {
 }
 
 function afficherChartTop10(top10) {
-    const podium = ['#d97706','#78716c','#b45309'];
+    // Or / argent / bronze pour le podium, couleur neutre ensuite.
+    const podium = ['#eab308','#94a3b8','#c2740c'];
     new Chart(document.getElementById('chartTop10'), {
         type: 'bar',
+        plugins: [etiquettesValeurs],
         data: {
             labels: top10.map(e =>
                 `${e.nom_complet}  ·  ${e.libelle_classe}`
@@ -270,6 +294,7 @@ function afficherChartTop10(top10) {
         options: {
             indexAxis: 'y',
             responsive: true,
+            maintainAspectRatio: false,
             plugins: {
                 legend:  { display: false },
                 tooltip: {
@@ -283,7 +308,9 @@ function afficherChartTop10(top10) {
                 x: {
                     ...scaleOpts(),
                     beginAtZero: true,
-                    max: 20
+                    max: 22,
+                    ticks: { ...scaleOpts().ticks,
+                             callback: v => (v <= 20 ? v : '') }
                 },
                 y: {
                     grid:  { display: false },

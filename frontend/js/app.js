@@ -2,7 +2,23 @@
 // app.js — Logique principale du frontend
 // ============================================
 
-const API = 'http://localhost:8000/api/v1';
+// URL relative : le backend FastAPI sert deja le frontend,
+// l'application fonctionne donc sur n'importe quel domaine.
+const API = '/api/v1';
+
+// ── Libelles d'affichage des matieres ──
+// La cle technique ("Francais") est celle de la base et du JSON :
+// on ne la renomme pas, on l'affiche seulement correctement.
+const MATIERES = ['Math', 'Francais', 'Anglais', 'PC', 'SVT', 'HG'];
+const LIBELLE_MATIERE = {
+    Math:     'Mathématiques',
+    Francais: 'Français',
+    Anglais:  'Anglais',
+    PC:       'Physique-Chimie',
+    SVT:      'SVT',
+    HG:       'Histoire-Géographie'
+};
+const libelleMatiere = m => LIBELLE_MATIERE[m] || m;
 
 // ── État global de l'application ──
 const etat = {
@@ -155,9 +171,12 @@ function afficherTableau(etudiants) {
     if (etudiants.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="10" style="text-align:center;
-                    padding:40px; color:#64748b;">
-                    Aucun étudiant trouvé
+                <td colspan="10">
+                    <div class="empty-state">
+                        <i class="fa-regular fa-folder-open"></i>
+                        <strong>Aucun étudiant trouvé</strong>
+                        Modifiez la recherche ou les filtres.
+                    </div>
                 </td>
             </tr>`;
         return;
@@ -173,10 +192,14 @@ function afficherTableau(etudiants) {
             const moyennes = Object.values(e.notes)
                 .map(n => n.moyenne);
             moyenne = moyennes.length
-                ? (moyennes.reduce((a, b) => a + b, 0)
-                   / moyennes.length).toFixed(2)
-                : '-';
+                ? moyennes.reduce((a, b) => a + b, 0) / moyennes.length
+                : null;
         }
+        // Formatage uniforme : 12.10 et non 12.1 a cote de 12.75
+        const moyenneAffichee = (moyenne === null
+            || moyenne === undefined || moyenne === '')
+            ? '—'
+            : Number(moyenne).toFixed(2);
 
         let boutonsActions = '';
         if (estJSON) {
@@ -189,7 +212,7 @@ function afficherTableau(etudiants) {
                 <button class="btn btn-success btn-sm"
                     onclick="restaurerEtudiant(${e.id_etudiant})"
                     title="Restaurer">
-                    ♻️ Restaurer
+                    <i class="fa-solid fa-rotate-left"></i> Restaurer
                 </button>`;
         } else {
             boutonsActions = `
@@ -207,7 +230,7 @@ function afficherTableau(etudiants) {
                     <button class="btn btn-danger btn-sm"
                         onclick="archiverEtudiant(${e.id_etudiant})"
                         title="Archiver">
-                        🗄️ Archiver
+                        <i class="fa-solid fa-box-archive"></i> Archiver
                     </button>
                 </div>`;
         }
@@ -233,7 +256,7 @@ function afficherTableau(etudiants) {
                 ${formaterDate(e.date_naissance)}
             </td>
             <td>${e.libelle_classe || e.classe}</td>
-            <td>${moyenne ?? '-'}</td>
+            <td>${moyenneAffichee}</td>
             <td>
                 <span class="badge ${badgeClass}">
                     ${badgeTexte}
@@ -333,9 +356,9 @@ function majBoutonImport() {
     const btn = document.getElementById('btnImporter');
     if (!btn) return;
     btn.disabled    = etat.selection.size === 0;
-    btn.textContent = etat.selection.size > 0
-        ? `⬆️ Importer (${etat.selection.size})`
-        : '⬆️ Importer sélection';
+    btn.innerHTML = etat.selection.size > 0
+        ? `<i class="fa-solid fa-file-import"></i> Importer (${etat.selection.size})`
+        : '<i class="fa-solid fa-file-import"></i> Importer la sélection';
 }
 
 async function importerSelection() {
@@ -461,7 +484,7 @@ function toggleModeEdition(checkbox, idEtudiant) {
                     onclick="sauvegarderLigne(
                         ${idEtudiant},
                         this.closest('tr'))">
-                    💾 Sauvegarder
+                    <i class="fa-solid fa-floppy-disk"></i> Sauvegarder
                 </button>
             </div>`;
 
@@ -584,7 +607,7 @@ function ouvrirAjout() {
     document.getElementById('modalTitre').textContent =
         'Ajouter un étudiant';
 
-    const matieres = ['Math','Francais','Anglais','PC','SVT','HG'];
+    const matieres = MATIERES;
 
     const champsNotes = matieres.map(m => `
         <fieldset style="border:1px solid #e2e8f0;
@@ -592,7 +615,7 @@ function ouvrirAjout() {
                          margin-bottom:10px;">
             <legend style="font-weight:600; padding:0 8px;
                            color:#2563eb; font-size:13px;">
-                ${m}
+                ${libelleMatiere(m)}
             </legend>
             <div style="display:grid;
                         grid-template-columns:1fr 1fr;
@@ -700,7 +723,7 @@ function ouvrirAjout() {
                         border-top:1px solid #e2e8f0;">
                 <button class="btn btn-primary"
                     onclick="soumettrAjout()">
-                    ✅ Enregistrer
+                    <i class="fa-solid fa-check"></i> Enregistrer
                 </button>
                 <button class="btn btn-outline"
                     onclick="fermerModal()">
@@ -741,7 +764,7 @@ function calculerMoyenneMatiere(matiere) {
 }
 
 function collecterNotes() {
-    const matieres = ['Math','Francais','Anglais','PC','SVT','HG'];
+    const matieres = MATIERES;
     const notes    = {};
 
     for (const m of matieres) {
@@ -763,7 +786,7 @@ function collecterNotes() {
 
         if (devoirs.length === 0 || isNaN(examen)) {
             afficherToast(
-                `${m} : remplis les devoirs ET l'examen`,
+                `${libelleMatiere(m)} : remplis les devoirs ET l'examen`,
                 'error'
             );
             return null;
@@ -773,7 +796,7 @@ function collecterNotes() {
         for (const note of devoirs) {
             if (note < 0 || note > 20) {
                 afficherToast(
-                    `${m} : note ${note} invalide (0–20)`,
+                    `${libelleMatiere(m)} : note ${note} invalide (0–20)`,
                     'error'
                 );
                 return null;
@@ -954,9 +977,9 @@ function attacherEvenements() {
             etat.archive = !etat.archive;
             etat.page    = 1;
             const btn    = document.getElementById('toggleArchive');
-            btn.textContent = etat.archive
-                ? '📋 Actifs'
-                : '🗄️ Archives';
+            btn.innerHTML = etat.archive
+                ? '<i class="fa-solid fa-list-check"></i> Actifs'
+                : '<i class="fa-solid fa-box-archive"></i> Archives';
             btn.className = etat.archive
                 ? 'btn btn-warning'
                 : 'btn btn-outline';

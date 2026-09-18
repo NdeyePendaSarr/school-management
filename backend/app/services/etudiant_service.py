@@ -5,6 +5,40 @@
 from app.database.connection import get_connection
 
 
+def _construire_filtres(recherche=None, classe=None,
+                        archive=False, valide=None):
+    """
+    Construit la clause WHERE et la liste de valeurs associee.
+
+    Factorise le filtrage partage par compter_etudiants() et
+    lister_etudiants() : les deux doivent toujours appliquer
+    exactement les memes criteres, sinon la pagination ment.
+
+    Seule la structure de la clause est interpolee ; toutes les
+    valeurs restent passees en parametres (%s) a psycopg2.
+    """
+    conditions = ["e.est_archive = %s"]
+    valeurs    = [archive]
+
+    if recherche:
+        conditions.append(
+            "(LOWER(e.nom) LIKE %s OR LOWER(e.prenom) LIKE %s "
+            "OR LOWER(e.numero) LIKE %s OR LOWER(e.code) LIKE %s)"
+        )
+        terme = f"%{recherche.lower()}%"
+        valeurs.extend([terme, terme, terme, terme])
+
+    if classe:
+        conditions.append("c.libelle_classe = %s")
+        valeurs.append(classe)
+
+    if valide is not None:
+        conditions.append("e.est_valide = %s")
+        valeurs.append(valide == 'true')
+
+    return " AND ".join(conditions), valeurs
+
+
 def compter_etudiants(recherche=None, classe=None,
                        archive=False, valide=None):
     """
@@ -14,26 +48,10 @@ def compter_etudiants(recherche=None, classe=None,
     cursor = conn.cursor()
 
     try:
-        conditions = ["e.est_archive = %s"]
-        valeurs    = [archive]
-
-        if recherche:
-            conditions.append(
-                "(LOWER(e.nom) LIKE %s OR LOWER(e.prenom) LIKE %s "
-                "OR LOWER(e.numero) LIKE %s OR LOWER(e.code) LIKE %s)"
-            )
-            terme = f"%{recherche.lower()}%"
-            valeurs.extend([terme, terme, terme, terme])
-
-        if classe:
-            conditions.append("c.libelle_classe = %s")
-            valeurs.append(classe)
-
-        if valide is not None:
-            conditions.append("e.est_valide = %s")
-            valeurs.append(valide == 'true')
-
-        where = " AND ".join(conditions)
+        where, valeurs = _construire_filtres(
+            recherche=recherche, classe=classe,
+            archive=archive, valide=valide
+        )
 
         cursor.execute(f"""
             SELECT COUNT(*)
@@ -60,26 +78,10 @@ def lister_etudiants(page=1, limite=5, recherche=None,
     try:
         offset = (page - 1) * limite
 
-        conditions = ["e.est_archive = %s"]
-        valeurs    = [archive]
-
-        if recherche:
-            conditions.append(
-                "(LOWER(e.nom) LIKE %s OR LOWER(e.prenom) LIKE %s "
-                "OR LOWER(e.numero) LIKE %s OR LOWER(e.code) LIKE %s)"
-            )
-            terme = f"%{recherche.lower()}%"
-            valeurs.extend([terme, terme, terme, terme])
-
-        if classe:
-            conditions.append("c.libelle_classe = %s")
-            valeurs.append(classe)
-
-        if valide is not None:
-            conditions.append("e.est_valide = %s")
-            valeurs.append(valide == 'true')
-
-        where = " AND ".join(conditions)
+        where, valeurs = _construire_filtres(
+            recherche=recherche, classe=classe,
+            archive=archive, valide=valide
+        )
 
         cursor.execute(f"""
             SELECT

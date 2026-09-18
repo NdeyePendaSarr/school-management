@@ -1,6 +1,28 @@
-# DEV DATA P8 — Gestion des Étudiants
+# School Management — Gestion des Étudiants
 
-Application full-stack de gestion d'étudiants développée dans le cadre du projet intégrateur web. Elle fusionne deux sources de données — une base PostgreSQL modifiable et un fichier JSON hérité en lecture seule — et expose le tout via une API FastAPI et un tableau de bord interactif.
+![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
+![Chart.js](https://img.shields.io/badge/Chart.js-4-FF6384?logo=chartdotjs&logoColor=white)
+![Licence](https://img.shields.io/badge/licence-MIT-black)
+
+Application full-stack de gestion d'étudiants développée dans le cadre du projet intégrateur web de la formation **Développement Data** (Orange Digital Center, promotion 8).
+
+Le cœur du projet n'est pas le CRUD : c'est la **réconciliation de deux sources de données** — une base PostgreSQL modifiable et un fichier JSON hérité en lecture seule — exposée derrière une API unique, avec traçabilité de l'origine de chaque enregistrement et import sélectif du JSON vers la base.
+
+## Aperçu
+
+### Gestion des étudiants
+![Liste des étudiants](docs/screenshots/01-etudiants.png)
+
+### Tableau de bord
+![Tableau de bord](docs/screenshots/02-dashboard.png)
+
+### Création d'un étudiant avec ses notes
+![Formulaire de création](docs/screenshots/03-formulaire.png)
+
+### Rendu mobile
+<img src="docs/screenshots/04-mobile.png" alt="Dashboard sur mobile" width="320">
 
 ## Fonctionnalités
 
@@ -18,7 +40,8 @@ Application full-stack de gestion d'étudiants développée dans le cadre du pro
 | Backend | FastAPI 0.115, Uvicorn |
 | Base de données | PostgreSQL, accès via `psycopg2` (SQL brut paramétré, pas d'ORM) |
 | Validation | Pydantic 2.7 |
-| Frontend | HTML / CSS / JavaScript vanilla, Chart.js |
+| Frontend | HTML / CSS / JavaScript vanilla, Chart.js 4 |
+| Tests | Pytest (règles de validation) |
 | Police / design | Plus Jakarta Sans + Instrument Serif |
 
 ## Structure du projet
@@ -42,7 +65,11 @@ projet_integrateur_web_fastAPI/
 │   │   └── valides.json         # Étudiants hérités (115)
 │   ├── sql/
 │   │   └── init.sql             # Création des tables + données initiales
+│   ├── tests/
+│   │   └── test_validation.py   # Tests des règles Pydantic (18 cas)
 │   ├── requirements.txt
+│   ├── requirements-dev.txt
+│   ├── .env.example             # Modèle à copier en .env
 │   └── .env                     # Variables de connexion (non versionné)
 ├── frontend/
 │   ├── index.html               # Tableau étudiants
@@ -51,9 +78,12 @@ projet_integrateur_web_fastAPI/
 │   └── js/
 │       ├── app.js
 │       └── dashboard.js
+├── docs/
+│   └── screenshots/             # Captures utilisées par ce README
 ├── scripts/
-│   ├── setup.sh
-│   └── run.sh
+│   ├── setup.sh                 # Venv + dépendances + schéma SQL
+│   └── run.sh                   # Démarrage du serveur
+├── LICENSE
 └── .gitignore
 ```
 
@@ -62,7 +92,7 @@ projet_integrateur_web_fastAPI/
 Cinq tables PostgreSQL avec cascades de suppression (supprimer un étudiant supprime ses résultats et devoirs) :
 
 - **classe** — `id_classe`, `libelle_classe` (ex. `6emeA`)
-- **matiere** — `id_matiere`, `libelle_matiere` (Math, Français, Anglais, PC, SVT, HG)
+- **matiere** — `id_matiere`, `libelle_matiere` (`Math`, `Francais`, `Anglais`, `PC`, `SVT`, `HG` — clés de jointure avec le JSON, affichées en toutes lettres côté interface)
 - **etudiant** — `id_etudiant`, `code`, `numero`, `nom`, `prenom`, `date_naissance`, `est_archive`, `est_valide`, `source`, `id_classe`
 - **resultat_matiere** — note d'examen et moyenne par étudiant/matière (contrainte d'unicité sur le couple)
 - **devoir** — notes de devoirs rattachées à un `resultat_matiere`
@@ -82,7 +112,16 @@ git clone https://github.com/NdeyePendaSarr/school-management.git
 cd school-management
 ```
 
-### 2. Créer l'environnement virtuel et installer les dépendances
+### 2. Installation automatique (recommandé)
+
+```bash
+./scripts/setup.sh    # venv + dépendances + schéma PostgreSQL
+./scripts/run.sh      # démarre le serveur sur http://localhost:8000
+```
+
+Le détail des étapes manuelles est décrit ci-dessous.
+
+### 2 bis. Créer l'environnement virtuel et installer les dépendances
 
 ```bash
 cd backend
@@ -93,7 +132,11 @@ pip install -r requirements.txt
 
 ### 3. Configurer la base de données
 
-Créer un fichier `backend/.env` (non versionné, voir `.gitignore`) :
+Copier le modèle fourni puis renseigner ses propres identifiants — le fichier `.env` n'est jamais versionné (voir `.gitignore`) :
+
+```bash
+cp backend/.env.example backend/.env
+```
 
 ```env
 DB_HOST=localhost
@@ -101,6 +144,7 @@ DB_PORT=5432
 DB_NAME=integrateur_web_db
 DB_USER=votre_utilisateur
 DB_PASSWORD=votre_mot_de_passe
+CORS_ORIGINS=http://localhost:8000,http://127.0.0.1:8000
 ```
 
 Puis initialiser le schéma :
@@ -119,6 +163,16 @@ L'application est servie sur `http://localhost:8000` :
 - `/` — tableau des étudiants
 - `/dashboard` — statistiques
 - `/api/v1/health` — vérifie que le serveur et la base répondent
+
+## Tests
+
+Les règles de validation sont couvertes par 18 tests qui ne nécessitent aucune base de données :
+
+```bash
+cd backend
+pip install -r requirements-dev.txt
+pytest
+```
 
 ## Endpoints API
 
@@ -145,7 +199,14 @@ Base : `/api/v1`
 - **Notes** : bornées entre 0 et 20
 - **Nom / prénom** : normalisés automatiquement (nom en majuscules, prénom en title-case)
 
-## Notes
+## Choix techniques et limites connues
 
-- `CORSMiddleware` autorise `allow_origins=["*"]` — adapté à un contexte pédagogique, à restreindre avant toute mise en production.
-- Les requêtes SQL construisent le `WHERE` dynamiquement, mais les valeurs sont systématiquement passées en paramètres (`%s`), ce qui évite l'injection SQL malgré le f-string sur la structure de la clause.
+- **SQL brut plutôt qu'un ORM** : choix assumé pour garder la maîtrise des requêtes (jointures, agrégats, `GROUP BY`) et rester explicite sur ce qui est exécuté.
+- **Injection SQL** : la clause `WHERE` est construite dynamiquement, mais seule sa *structure* est interpolée ; toutes les valeurs passent en paramètres (`%s`) à psycopg2. Le filtrage est factorisé dans `_construire_filtres()` afin que le comptage et la liste appliquent toujours des critères identiques — sinon la pagination mentirait.
+- **CORS** : la liste blanche est pilotée par la variable `CORS_ORIGINS`, restreinte par défaut à l'hôte local. Le frontend étant servi par FastAPI lui-même, aucune origine tierce n'est nécessaire en développement.
+- **Connexions** : une connexion PostgreSQL est ouverte puis fermée à chaque requête. Suffisant à cette échelle ; un pool (`psycopg_pool`) serait la prochaine étape sous charge réelle.
+- **Moyennes** : la moyenne par matière est calculée côté client à la saisie, puis validée côté serveur (bornes 0–20). Le calcul de référence reste l'agrégat SQL utilisé par le dashboard.
+
+## Licence
+
+MIT — voir [LICENSE](LICENSE).

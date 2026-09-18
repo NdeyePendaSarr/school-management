@@ -59,20 +59,20 @@
             </select>
 
             <button id="toggleArchive" class="btn btn-outline">
-                🗄 Archives
+                <i class="fa-solid fa-box-archive"></i> Archives
             </button>
 
             <button id="btnAjouter"
                 class="btn btn-primary"
                 onclick="ouvrirAjout()">
-                + Ajouter
+                <i class="fa-solid fa-plus"></i> Ajouter
             </button>
 
             <button id="btnImporter"
                 class="btn btn-success"
                 onclick="importerSelection()"
                 disabled>
-                ↑ Importer sélection
+                <i class="fa-solid fa-file-import"></i> Importer la sélection
             </button>
 
         </div>
@@ -90,7 +90,9 @@
                 <table>
                     <thead>
                         <tr>
-                            <th style="width:44px; padding-left:20px">☑</th>
+                            <th style="width:44px; padding-left:20px">
+                                <span class="sr-only">Sélection</span>
+                            </th>
                             <th>Code</th>
                             <th>Numéro</th>
                             <th>Nom</th>
@@ -126,7 +128,7 @@
 <div class="toast" id="toast"></div>
 
 <footer class="site-footer">
-    <div class="footer-text">Créé par <strong>NPS</strong> — 2026</div>
+    <div class="footer-text">Développé par <strong>Ndeye Penda Sarr</strong> — 2026</div>
     <div class="footer-socials">
         <a href="https://www.linkedin.com/in/ndeyependasarr" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
             <i class="fa-brands fa-linkedin-in"></i>
