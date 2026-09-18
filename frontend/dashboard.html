@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Management — Dashboard</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="page-dashboard">
+
+<nav>
+    <div class="logo">
+        <span>S</span>
+        School Management
+    </div>
+    <div class="nav-links">
+        <a href="/">Étudiants</a>
+        <a href="/dashboard" class="active">Dashboard</a>
+    </div>
+</nav>
+
+<div class="container">
+
+    <div class="page-header">
+        <div class="page-header-left">
+            <h1>Tableau de bord</h1>
+            <p>Statistiques et indicateurs de performance académique</p>
+        </div>
+    </div>
+
+    <div id="kpi-container"
+         style="display:grid;
+                grid-template-columns:repeat(auto-fit,minmax(155px,1fr));
+                gap:14px; margin-bottom:22px;">
+        <div class="loading" style="grid-column:1/-1">
+            <div class="spinner"></div>
+        </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr;
+                gap:16px; margin-bottom:16px;">
+        <div class="chart-card">
+            <h3>Étudiants par classe</h3>
+            <canvas id="chartClasses" height="200"></canvas>
+        </div>
+        <div class="chart-card">
+            <h3>Répartition par source</h3>
+            <canvas id="chartSources" height="200"></canvas>
+        </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr;
+                gap:16px; margin-bottom:16px;">
+        <div class="chart-card">
+            <h3>Valides vs invalides</h3>
+            <canvas id="chartValidite" height="200"></canvas>
+        </div>
+        <div class="chart-card">
+            <h3>Moyenne générale par classe</h3>
+            <canvas id="chartMoyennes" height="200"></canvas>
+        </div>
+    </div>
+
+    <div class="chart-card">
+        <h3>Top 10 — meilleures moyennes</h3>
+        <canvas id="chartTop10" height="85"></canvas>
+    </div>
+
+</div>
+
+<footer class="site-footer">
+    <div class="footer-text">Créé par <strong>NPS</strong> — 2026</div>
+    <div class="footer-socials">
+        <a href="https://www.linkedin.com/in/ndeyependasarr" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
+            <i class="fa-brands fa-linkedin-in"></i>
+        </a>
+        <a href="https://github.com/NdeyePendaSarr" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
+            <i class="fa-brands fa-github"></i>
+        </a>
+    </div>
+</footer>
+
+<script src="/static/js/dashboard.js"></script>
+</body>
+</html>

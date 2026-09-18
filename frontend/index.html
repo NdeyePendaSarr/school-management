@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>School Management — Gestion des Étudiants</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body class="page-etudiants">
+
+<nav>
+    <div class="logo">
+        <span>S</span>
+        School Management
+    </div>
+    <div class="nav-links">
+        <a href="/" class="active">Étudiants</a>
+        <a href="/dashboard">Dashboard</a>
+    </div>
+</nav>
+
+<div class="container">
+
+    <div class="page-header">
+        <div class="page-header-left">
+            <h1>Gestion des étudiants</h1>
+            <p>Consultation, modification et suivi des données académiques</p>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="toolbar">
+
+            <input type="text" id="recherche"
+                placeholder="Rechercher nom, prénom, numéro...">
+
+            <select id="filtreClasse">
+                <option value="">Toutes les classes</option>
+            </select>
+
+            <select id="filtreSource">
+                <option value="tous">Toutes sources</option>
+                <option value="db">Base de données</option>
+                <option value="json">Fichier JSON</option>
+            </select>
+
+            <select id="filtreValidite">
+                <option value="">Valides + Invalides</option>
+                <option value="true">Valides uniquement</option>
+                <option value="false">Invalides uniquement</option>
+            </select>
+
+            <select id="limitePage">
+                <option value="5">5 / page</option>
+                <option value="10">10 / page</option>
+                <option value="20">20 / page</option>
+                <option value="50">50 / page</option>
+            </select>
+
+            <button id="toggleArchive" class="btn btn-outline">
+                🗄 Archives
+            </button>
+
+            <button id="btnAjouter"
+                class="btn btn-primary"
+                onclick="ouvrirAjout()">
+                + Ajouter
+            </button>
+
+            <button id="btnImporter"
+                class="btn btn-success"
+                onclick="importerSelection()"
+                disabled>
+                ↑ Importer sélection
+            </button>
+
+        </div>
+    </div>
+
+    <div class="card" style="padding:0; overflow:hidden;">
+
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            Chargement des données...
+        </div>
+
+        <div id="tableWrapper" style="display:none">
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width:44px; padding-left:20px">☑</th>
+                            <th>Code</th>
+                            <th>Numéro</th>
+                            <th>Nom</th>
+                            <th>Prénom</th>
+                            <th>Naissance</th>
+                            <th>Classe</th>
+                            <th>Moyenne</th>
+                            <th>Source</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody"></tbody>
+                </table>
+            </div>
+
+            <div class="pagination"
+                 style="padding:12px 22px; border-top:1px solid var(--bg);">
+                <span id="paginationInfo" class="pagination-info"></span>
+                <div id="pagination" class="pagination-controls"></div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+        <h2 id="modalTitre">Ajouter un étudiant</h2>
+        <div id="modalContenu"></div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<footer class="site-footer">
+    <div class="footer-text">Créé par <strong>NPS</strong> — 2026</div>
+    <div class="footer-socials">
+        <a href="https://www.linkedin.com/in/ndeyependasarr" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
+            <i class="fa-brands fa-linkedin-in"></i>
+        </a>
+        <a href="https://github.com/NdeyePendaSarr" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
+            <i class="fa-brands fa-github"></i>
+        </a>
+    </div>
+</footer>
+
+<script src="/static/js/app.js"></script>
+</body>
+</html>
