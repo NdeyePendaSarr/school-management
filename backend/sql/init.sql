@@ -4,11 +4,36 @@
 -- ============================================
 
 -- Suppression dans l'ordre inverse des dépendances
+DROP TABLE IF EXISTS rejet CASCADE;
 DROP TABLE IF EXISTS devoir CASCADE;
 DROP TABLE IF EXISTS resultat_matiere CASCADE;
 DROP TABLE IF EXISTS etudiant CASCADE;
+DROP TABLE IF EXISTS import_run CASCADE;
 DROP TABLE IF EXISTS matiere CASCADE;
 DROP TABLE IF EXISTS classe CASCADE;
+
+-- ============================================
+-- TABLE IMPORT_RUN
+-- Journal d'exécution du pipeline d'ingestion.
+-- Une ligne par exécution, qu'elle soit lancée en ligne de
+-- commande ou déclenchée depuis l'interface. Sans ce journal,
+-- une ingestion qui se passe mal ne laisse aucune trace.
+-- ============================================
+CREATE TABLE import_run (
+    id_run          SERIAL PRIMARY KEY,
+    source          VARCHAR(160) NOT NULL,
+    declencheur     VARCHAR(10)  NOT NULL
+                    CHECK (declencheur IN ('CLI', 'API')),
+    statut          VARCHAR(12)  NOT NULL DEFAULT 'EN_COURS'
+                    CHECK (statut IN ('EN_COURS', 'SUCCES', 'ECHEC')),
+    demarre_le      TIMESTAMP    NOT NULL DEFAULT NOW(),
+    termine_le      TIMESTAMP,
+    lignes_lues     INTEGER      NOT NULL DEFAULT 0,
+    lignes_inserees INTEGER      NOT NULL DEFAULT 0,
+    lignes_doublons INTEGER      NOT NULL DEFAULT 0,
+    lignes_rejetees INTEGER      NOT NULL DEFAULT 0,
+    message         TEXT
+);
 
 -- ============================================
 -- TABLE CLASSE
@@ -40,8 +65,14 @@ CREATE TABLE etudiant (
     est_valide     BOOLEAN      NOT NULL DEFAULT TRUE,
     source         VARCHAR(20)  NOT NULL DEFAULT 'IMPORT_JSON',
     created_at     TIMESTAMP    NOT NULL DEFAULT NOW(),
-    id_classe      INTEGER      NOT NULL REFERENCES classe(id_classe)
+    id_classe      INTEGER      NOT NULL REFERENCES classe(id_classe),
+    -- Traçabilité : quelle exécution du pipeline a chargé cette ligne.
+    id_run         INTEGER      REFERENCES import_run(id_run)
 );
+
+CREATE INDEX idx_etudiant_numero  ON etudiant (numero);
+CREATE INDEX idx_etudiant_archive ON etudiant (est_archive);
+CREATE INDEX idx_etudiant_run     ON etudiant (id_run);
 
 -- ============================================
 -- TABLE RESULTAT_MATIERE
@@ -65,6 +96,26 @@ CREATE TABLE devoir (
     id_resultat INTEGER NOT NULL REFERENCES resultat_matiere(id_resultat)
                 ON DELETE CASCADE
 );
+
+-- ============================================
+-- TABLE REJET
+-- Quarantaine : une ligne écartée n'est pas perdue, elle est
+-- conservée avec son motif et sa charge utile d'origine, pour
+-- être corrigée puis réinjectée.
+-- ============================================
+CREATE TABLE rejet (
+    id_rejet     SERIAL PRIMARY KEY,
+    id_run       INTEGER REFERENCES import_run(id_run) ON DELETE CASCADE,
+    numero       VARCHAR(40),
+    code         VARCHAR(40),
+    motif        VARCHAR(40) NOT NULL,
+    detail       TEXT,
+    charge_utile JSONB,
+    rejete_le    TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_rejet_motif ON rejet (motif);
+CREATE INDEX idx_rejet_run   ON rejet (id_run);
 
 -- ============================================
 -- DONNEES INITIALES : MATIERES

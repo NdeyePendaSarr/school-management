@@ -168,112 +168,31 @@ def lire_json():
 
 def importer_selection(numeros: list):
     """
-    Importe uniquement les étudiants dont le numéro
-    est dans la liste fournie.
+    Importe la sélection faite depuis l'interface.
+
+    L'import déclenché par un clic emprunte exactement le même
+    pipeline que l'ingestion en ligne de commande : mêmes règles de
+    validation, même quarantaine, même journal d'exécution. Deux
+    chemins d'entrée, une seule logique — sinon les deux finissent
+    par diverger.
     """
-    json_data = lire_json()
-    conn      = get_connection()
-    cursor    = conn.cursor()
+    import os
+    from app.pipeline.ingestion import executer_ingestion
 
-    importes     = []
-    doublons     = []
-    introuvables = []
+    chemin = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(
+            os.path.abspath(__file__)))),
+        'data', 'valides.json'
+    )
 
-    try:
-        for numero in numeros:
-
-            if numero not in json_data:
-                introuvables.append(numero)
-                continue
-
-            cursor.execute(
-                "SELECT id_etudiant FROM etudiant "
-                "WHERE numero = %s",
-                (numero,)
-            )
-            if cursor.fetchone() is not None:
-                doublons.append(numero)
-                continue
-
-            etudiant = json_data[numero]
-
-            cursor.execute(
-                "SELECT id_classe FROM classe "
-                "WHERE libelle_classe = %s",
-                (etudiant['classe'],)
-            )
-            resultat_classe = cursor.fetchone()
-            if resultat_classe is None:
-                introuvables.append(numero)
-                continue
-
-            id_classe = resultat_classe[0]
-
-            cursor.execute("""
-                INSERT INTO etudiant
-                    (code, numero, nom, prenom, date_naissance,
-                     id_classe, est_archive, est_valide, source)
-                VALUES (%s, %s, %s, %s, %s, %s,
-                        FALSE, TRUE, 'IMPORT_JSON')
-                RETURNING id_etudiant
-            """, (
-                etudiant['code'],
-                etudiant['numero'],
-                etudiant['nom'].upper(),
-                etudiant['prenom'].title(),
-                convertir_date(etudiant['date_naissance']),
-                id_classe
-            ))
-            id_etudiant = cursor.fetchone()[0]
-
-            for matiere_nom, donnees in etudiant['notes'].items():
-                cursor.execute(
-                    "SELECT id_matiere FROM matiere "
-                    "WHERE libelle_matiere = %s",
-                    (matiere_nom,)
-                )
-                res_matiere = cursor.fetchone()
-                if res_matiere is None:
-                    continue
-
-                cursor.execute("""
-                    INSERT INTO resultat_matiere
-                        (note_examen, moyenne_matiere,
-                         id_etudiant, id_matiere)
-                    VALUES (%s, %s, %s, %s)
-                    RETURNING id_resultat
-                """, (
-                    donnees['examen'],
-                    donnees['moyenne'],
-                    id_etudiant,
-                    res_matiere[0]
-                ))
-                id_resultat = cursor.fetchone()[0]
-
-                for note in donnees['devoirs']:
-                    cursor.execute(
-                        "INSERT INTO devoir "
-                        "(note_devoir, id_resultat) "
-                        "VALUES (%s, %s)",
-                        (note, id_resultat)
-                    )
-
-            importes.append(numero)
-
-        conn.commit()
-
-    except Exception:
-        conn.rollback()
-        raise
-    finally:
-        cursor.close()
-        conn.close()
+    rapport = executer_ingestion(chemin, declencheur='API', numeros=numeros)
 
     return {
-        "importes":       importes,
-        "doublons":       doublons,
-        "introuvables":   introuvables,
-        "total_importes": len(importes)
+        "id_run":         rapport['id_run'],
+        "total_importes": rapport['inserees'],
+        "doublons":       rapport['doublons'],
+        "rejetes":        rapport['rejetees'],
+        "motifs":         rapport['motifs']
     }
 
 
@@ -320,3 +239,55 @@ def lire_json_pagine(page=1, limite=5):
     finally:
         cursor.close()
         conn.close()
+
+def lire_json_filtre(recherche=None, classe=None):
+    """
+    Étudiants du JSON absents de PostgreSQL, filtrés et normalisés.
+
+    Sert de source secondaire à la fusion : les mêmes critères que
+    la requête SQL sont appliqués ici, sinon la page mélangerait
+    des lignes filtrées et des lignes qui ne le sont pas.
+    """
+    tous = charger_json()
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("SELECT numero FROM etudiant")
+        numeros_en_base = {ligne[0] for ligne in cursor.fetchall()}
+    finally:
+        cursor.close()
+        conn.close()
+
+    resultats = []
+    terme = recherche.lower() if recherche else None
+
+    for e in tous:
+        if e['numero'] in numeros_en_base:
+            continue
+        if classe and e.get('classe') != classe:
+            continue
+
+        nom    = e['nom'].upper()
+        prenom = e['prenom'].title()
+
+        if terme and not any(
+            terme in champ.lower()
+            for champ in (nom, prenom, e['numero'], e['code'])
+        ):
+            continue
+
+        moyennes = [n['moyenne'] for n in e.get('notes', {}).values()
+                    if n.get('moyenne') is not None]
+
+        resultats.append({
+            **e,
+            'nom':              nom,
+            'prenom':           prenom,
+            'libelle_classe':   e.get('classe'),
+            'origine':          'JSON',
+            'moyenne_generale': round(sum(moyennes) / len(moyennes), 2)
+                                if moyennes else None
+        })
+
+    return resultats

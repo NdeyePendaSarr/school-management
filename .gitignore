@@ -23,3 +23,7 @@ env/
 # OS
 .DS_Store
 Thumbs.db
+
+# Interface React
+node_modules/
+frontend-react/dist/

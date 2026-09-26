@@ -1,0 +1,102 @@
+@import '@fontsource-variable/manrope';
+@import '@fontsource-variable/sora';
+@import 'tailwindcss';
+
+/* ============================================
+   Direction visuelle : indigo et menthe.
+
+   L'en-tête et les actions ne partagent pas la même valeur :
+   « entete » est le bandeau nuit, « primaire » l'indigo des
+   boutons, des barres et des états actifs. Les séduire l'un
+   dans l'autre aplatit la hiérarchie.
+
+   L'alerte ne sert qu'à une chose : signaler une moyenne sous
+   la barre des 10. Elle n'est jamais décorative.
+   ============================================ */
+@theme {
+    /* Surfaces */
+    --color-fond:          #f3f5fc;
+    --color-surface:       #ffffff;
+    --color-bordure:       #dfe4f2;
+
+    /* Texte */
+    --color-texte:         #131a33;
+    --color-sourdine:      #5f6a8a;
+
+    /* Bandeau de navigation */
+    --color-entete:        #161c3d;
+    --color-entete-texte:  #e7eafb;
+    --color-entete-actif:  #2b3466;
+
+    /* Actions et accents */
+    --color-primaire:      #4a47d8;
+    --color-primaire-fonce:#3a37b8;
+    --color-primaire-10:   #ecebfb;
+    --color-menthe:        #0ea47a;
+    --color-menthe-10:     #e2f4ee;
+    --color-alerte:        #d6455c;
+    --color-alerte-10:     #fbe9ec;
+    --color-ambre:         #b56d16;
+    --color-ambre-10:      #fbf0e2;
+
+    /* Séries de graphiques et repères.
+       Chaque repère porte sa couleur : c'est ce qui donne au
+       tableau de bord sa lisibilité en un coup d'œil. */
+    --color-serie-1:       #4a47d8;
+    --color-serie-2:       #0e8fa4;
+    --color-serie-3:       #e08a2b;
+    --color-serie-4:       #0ea47a;
+    --color-serie-5:       #7c5ce0;
+    --color-serie-6:       #d1478f;
+
+    --font-titre: 'Sora Variable', system-ui, sans-serif;
+    --font-texte: 'Manrope Variable', system-ui, sans-serif;
+}
+
+@layer base {
+    html {
+        scroll-padding-top: env(safe-area-inset-top, 0px);
+    }
+
+    body {
+        margin: 0;
+        background: var(--color-fond);
+        color: var(--color-texte);
+        font-family: var(--font-texte);
+        font-size: 14px;
+        line-height: 1.55;
+        -webkit-font-smoothing: antialiased;
+        padding-top: env(safe-area-inset-top, 0px);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    /* Les chiffres sont le contenu principal : ils doivent
+       s'aligner en colonne sans danser d'une ligne à l'autre. */
+    table, .chiffres {
+        font-variant-numeric: tabular-nums;
+    }
+
+    h1, h2 {
+        font-family: var(--font-titre);
+        font-weight: 700;
+        letter-spacing: -0.02em;
+    }
+
+    :focus-visible {
+        outline: 2px solid var(--color-primaire);
+        outline-offset: 2px;
+        border-radius: 4px;
+    }
+
+    ::selection {
+        background: var(--color-primaire);
+        color: #ffffff;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+    }
+}

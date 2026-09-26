@@ -11,15 +11,21 @@ router = APIRouter()
 
 @router.get("/etudiants")
 def liste_etudiants(
-    page:      int  = Query(default=1,   ge=1),
-    limite:    int  = Query(default=5,   ge=1, le=500),
+    page:      int  = Query(default=1, ge=1),
+    limite:    int  = Query(default=5, ge=1, le=500),
     recherche: str  = Query(default=None),
     classe:    str  = Query(default=None),
     archive:   bool = Query(default=False),
-    valide:    str  = Query(default=None)
+    valide:    str  = Query(default=None),
+    source:    str  = Query(default='tous', pattern='^(tous|db|json)$')
 ):
     """
-    Retourne une liste paginée d'étudiants.
+    Retourne une page d'étudiants, fusionnée côté serveur.
+
+    PostgreSQL est la source principale ; le fichier `valides.json`
+    complète la page lorsque la base ne fournit pas assez de lignes.
+    Chaque ligne porte son origine (`DB` ou `JSON`).
+
     Paramètres :
     - page      : numéro de page (défaut 1)
     - limite    : lignes par page (défaut 5)
@@ -27,25 +33,13 @@ def liste_etudiants(
     - classe    : filtre par classe
     - archive   : afficher les archivés (défaut False)
     - valide    : 'true' ou 'false' pour filtrer par validité
+    - source    : 'tous', 'db' ou 'json'
     """
-    etudiants = etudiant_service.lister_etudiants(
+    return etudiant_service.lister_fusionne(
         page=page, limite=limite,
         recherche=recherche, classe=classe,
-        archive=archive, valide=valide
+        archive=archive, valide=valide, source=source
     )
-    total = etudiant_service.compter_etudiants(
-        recherche=recherche, classe=classe,
-        archive=archive, valide=valide
-    )
-    return {
-        "data": etudiants,
-        "pagination": {
-            "page":        page,
-            "limite":      limite,
-            "total":       total,
-            "total_pages": -(-total // limite)
-        }
-    }
 
 
 @router.get("/etudiants/{id_etudiant}")

@@ -412,3 +412,58 @@ def restaurer_etudiant(id_etudiant):
     finally:
         cursor.close()
         conn.close()
+
+def lister_fusionne(page=1, limite=5, recherche=None, classe=None,
+                    archive=False, valide=None, source='tous'):
+    """
+    Une page d'étudiants, fusionnée par le backend.
+
+    Le cahier des charges décrit ce comportement : le serveur reçoit
+    le numéro de page, applique les filtres, interroge PostgreSQL,
+    complète si nécessaire avec le fichier JSON, puis ne retourne que
+    les lignes de la page demandée. Le frontend n'a rien à recoller.
+
+    PostgreSQL est la source principale : la liste globale est donc
+    la base d'abord, le JSON ensuite. Le JSON reprend exactement là
+    où la base s'arrête, ce qui évite le doublon et le trou à la
+    frontière entre les deux sources.
+
+    Archives et validité n'existent que côté base : dans ces cas le
+    JSON n'est pas interrogé.
+    """
+    from app.services.json_service import lire_json_filtre
+
+    offset          = (page - 1) * limite
+    json_pertinent  = source != 'db' and not archive and valide is None
+
+    if source == 'json':
+        if not json_pertinent:
+            lignes, total = [], 0
+        else:
+            tout   = lire_json_filtre(recherche, classe)
+            total  = len(tout)
+            lignes = tout[offset:offset + limite]
+    else:
+        total_db = compter_etudiants(recherche, classe, archive, valide)
+        lignes   = lister_etudiants(page, limite, recherche,
+                                    classe, archive, valide)
+        total    = total_db
+
+        if json_pertinent:
+            tout_json = lire_json_filtre(recherche, classe)
+            total    += len(tout_json)
+
+            restant = limite - len(lignes)
+            if restant > 0:
+                debut  = max(0, offset - total_db)
+                lignes = lignes + tout_json[debut:debut + restant]
+
+    return {
+        "data": lignes,
+        "pagination": {
+            "page":        page,
+            "limite":      limite,
+            "total":       total,
+            "total_pages": -(-total // limite) if total > 0 else 1
+        }
+    }

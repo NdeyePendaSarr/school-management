@@ -2,11 +2,11 @@
 # main.py
 # Point d'entrée de l'application FastAPI
 # ============================================
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from app.routes import etudiants, stats, import_json
+from app.routes import etudiants, stats, import_json, qualite
 from app.config import CORS_ORIGINS
 import os
 
@@ -28,18 +28,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Servir les fichiers statiques du frontend
-FRONTEND_DIR = os.path.join(
-    os.path.dirname(__file__), '..', '..', 'frontend'
-)
-app.mount(
-    "/static",
-    StaticFiles(directory=FRONTEND_DIR),
-    name="static"
-)
+# ── Frontend ────────────────────────────────
+# L'interface est une application React construite par Vite.
+# `npm run build` produit frontend-react/dist, que FastAPI sert ici.
+RACINE       = os.path.join(os.path.dirname(__file__), '..', '..')
+FRONTEND_DIR = os.path.abspath(os.path.join(RACINE, 'frontend-react', 'dist'))
+INDEX        = os.path.join(FRONTEND_DIR, 'index.html')
+
+if os.path.isdir(os.path.join(FRONTEND_DIR, 'assets')):
+    app.mount(
+        "/assets",
+        StaticFiles(directory=os.path.join(FRONTEND_DIR, 'assets')),
+        name="assets"
+    )
 
 # Enregistrement des routes API
 app.include_router(etudiants.router,   prefix="/api/v1")
+app.include_router(qualite.router, prefix="/api/v1", tags=["Qualité"])
 app.include_router(stats.router,       prefix="/api/v1")
 app.include_router(import_json.router, prefix="/api/v1")
 
@@ -58,15 +63,27 @@ def health_check():
         return {"status": "error", "message": str(e)}
 
 
+def servir_application():
+    """
+    Renvoie l'application React.
+
+    Le routage est géré côté navigateur : toutes les pages de
+    l'interface partagent le même index.html.
+    """
+    if not os.path.isfile(INDEX):
+        raise HTTPException(
+            status_code=503,
+            detail="Interface non construite. Lancez : "
+                   "cd frontend-react && npm install && npm run build"
+        )
+    return FileResponse(INDEX)
+
+
 @app.get("/")
-def servir_index():
-    """Sert la page principale"""
-    chemin = os.path.join(FRONTEND_DIR, 'index.html')
-    return FileResponse(chemin)
+def page_eleves():
+    return servir_application()
 
 
 @app.get("/dashboard")
-def servir_dashboard():
-    """Sert la page dashboard"""
-    chemin = os.path.join(FRONTEND_DIR, 'dashboard.html')
-    return FileResponse(chemin)
+def page_tableau_de_bord():
+    return servir_application()
