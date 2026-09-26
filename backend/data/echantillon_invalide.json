@@ -1,0 +1,132 @@
+[
+  {
+    "code": "AAD004",
+    "numero": "K2LM8PQ",
+    "nom": "NDOYE",
+    "prenom": "Awa",
+    "date_naissance": "03/04/2005",
+    "classe": "6emeA",
+    "notes": {
+      "Math": {
+        "devoirs": [
+          12,
+          14
+        ],
+        "examen": 13,
+        "moyenne": 12.67
+      }
+    }
+  },
+  {
+    "code": "AB12",
+    "numero": "R7TX4ZD",
+    "nom": "SOW",
+    "prenom": "Modou",
+    "date_naissance": "11/09/2004",
+    "classe": "5emeB",
+    "notes": {
+      "Math": {
+        "devoirs": [
+          10,
+          12
+        ],
+        "examen": 11,
+        "moyenne": 11.0
+      }
+    }
+  },
+  {
+    "code": "BCD221",
+    "numero": "NUMEROTROPLONG",
+    "nom": "FALL",
+    "prenom": "Adama",
+    "date_naissance": "22/02/2006",
+    "classe": "4emeA",
+    "notes": {
+      "SVT": {
+        "devoirs": [
+          9
+        ],
+        "examen": 12,
+        "moyenne": 11.0
+      }
+    }
+  },
+  {
+    "code": "CDE332",
+    "numero": "W3PQ8LM",
+    "nom": "BA",
+    "prenom": "Ousmane",
+    "date_naissance": "32/13/2005",
+    "classe": "3emeA",
+    "notes": {
+      "HG": {
+        "devoirs": [
+          10
+        ],
+        "examen": 14,
+        "moyenne": 12.67
+      }
+    }
+  },
+  {
+    "code": "DEF443",
+    "numero": "Y6KD2HN",
+    "nom": "DIOP",
+    "prenom": "Fatou",
+    "date_naissance": "07/07/2005",
+    "classe": "1ereZ",
+    "notes": {
+      "PC": {
+        "devoirs": [
+          11
+        ],
+        "examen": 13,
+        "moyenne": 12.33
+      }
+    }
+  },
+  {
+    "code": "EFG554",
+    "numero": "Z9BV5RT",
+    "nom": "SECK",
+    "prenom": "Aliou",
+    "date_naissance": "15/01/2006",
+    "classe": "6emeB",
+    "notes": {
+      "Anglais": {
+        "devoirs": [
+          10
+        ],
+        "examen": 45,
+        "moyenne": 21.67
+      }
+    }
+  },
+  {
+    "code": "FGH665",
+    "numero": "Q4NC7WS",
+    "nom": "",
+    "prenom": "Aminata",
+    "date_naissance": "28/11/2004",
+    "classe": "5emeA",
+    "notes": {
+      "Francais": {
+        "devoirs": [
+          13
+        ],
+        "examen": 12,
+        "moyenne": 12.33
+      }
+    }
+  },
+  {
+    "code": "GHI776",
+    "numero": "J8RF3XK",
+    "nom": "GUEYE",
+    "prenom": "Ibrahima",
+    "date_naissance": "02/06/2005",
+    "classe": "4emeB",
+    "notes": {}
+  }
+]

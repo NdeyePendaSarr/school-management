@@ -206,6 +206,26 @@ python -m app.pipeline --fichier autre.json   # ou un autre fichier
 
 L'opération est idempotente : relancez-la sans crainte.
 
+Un échantillon volontairement non conforme accompagne le dépôt pour rendre la quarantaine vérifiable. Chacune de ses lignes viole une règle, et une seule :
+
+```bash
+python -m app.pipeline --fichier data/echantillon_invalide.json
+```
+
+Sept lignes sur huit partent en quarantaine, une par motif, et la huitième est chargée. Les rejets sont ensuite consultables dans le tableau de bord ou via `GET /api/v1/qualite/rejets`.
+
+### État reproduit par les captures
+
+Les copies d'écran de ce README proviennent d'un clone neuf, dans l'état produit par ces trois commandes :
+
+```bash
+python -m app.pipeline --limite 40                              # 40 lignes chargées
+# puis, depuis l'interface : sélection de 5 lignes JSON et import
+python -m app.pipeline --fichier data/echantillon_invalide.json # 7 rejets
+```
+
+Soit 46 élèves en base, 70 restés dans le JSON, 3 archivés, 7 lignes en quarantaine et 3 exécutions au journal.
+
 ### 4. Démarrer
 
 ```bash
