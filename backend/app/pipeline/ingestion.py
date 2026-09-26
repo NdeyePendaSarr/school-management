@@ -200,7 +200,8 @@ def _charger_etudiant(cursor, ligne, id_run, referentiel_classes,
 
 # ── Point d'entrée ──────────────────────────
 
-def executer_ingestion(chemin, declencheur='CLI', numeros=None):
+def executer_ingestion(chemin, declencheur='CLI', numeros=None,
+                       limite=None):
     """
     Exécute une ingestion complète et renvoie son rapport.
 
@@ -212,6 +213,11 @@ def executer_ingestion(chemin, declencheur='CLI', numeros=None):
     Chaque ligne suit l'un de trois chemins, et un seul : insérée,
     comptée comme doublon, ou mise en quarantaine avec son motif.
     La somme des trois vaut toujours le nombre de lignes lues.
+
+    `limite` ne charge que les n premières lignes du fichier. Le
+    reste demeure dans le JSON, qui garde ainsi son rôle de source
+    secondaire : c'est lui qui complète l'affichage tant que la base
+    ne suffit pas, et c'est de là que partent les imports.
     """
     if not os.path.isfile(chemin):
         raise FileNotFoundError(f"Fichier introuvable : {chemin}")
@@ -223,6 +229,9 @@ def executer_ingestion(chemin, declencheur='CLI', numeros=None):
         voulus = set(numeros)
         lignes = [l for l in lignes if str(l.get('numero')).upper() in voulus
                   or l.get('numero') in voulus]
+
+    if limite is not None:
+        lignes = lignes[:limite]
 
     conn   = get_connection()
     cursor = conn.cursor()

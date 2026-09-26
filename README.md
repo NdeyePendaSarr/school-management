@@ -197,9 +197,12 @@ Au premier passage, le script crée `backend/.env` depuis le modèle et s'arrêt
 
 ```bash
 cd backend
-python -m app.pipeline                        # ingère data/valides.json
+python -m app.pipeline --limite 40            # charge 40 lignes
+python -m app.pipeline                        # charge tout le fichier
 python -m app.pipeline --fichier autre.json   # ou un autre fichier
 ```
+
+`--limite` ne charge qu'une partie du fichier. C'est la façon normale d'alimenter l'application : le reste demeure dans le JSON, qui garde son rôle de source secondaire — il complète l'affichage tant que la base ne suffit pas, et c'est de là que partent les imports sélectifs. Charger tout le fichier d'un coup vide la source secondaire, et plus aucune ligne `JSON` n'apparaît.
 
 L'opération est idempotente : relancez-la sans crainte.
 

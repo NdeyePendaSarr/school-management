@@ -58,10 +58,18 @@ def principal():
         '--fichier', default=chemin_par_defaut(),
         help="Chemin du fichier JSON (défaut : backend/data/valides.json)"
     )
+    analyseur.add_argument(
+        '--limite', type=int, default=None, metavar='N',
+        help="Ne charger que les N premières lignes. Le reste demeure "
+             "dans le JSON, qui garde son rôle de source secondaire."
+    )
     arguments = analyseur.parse_args()
 
     try:
-        afficher(executer_ingestion(arguments.fichier, declencheur='CLI'))
+        afficher(executer_ingestion(
+            arguments.fichier, declencheur='CLI',
+            limite=arguments.limite
+        ))
         return 0
     except FileNotFoundError as erreur:
         print(f"Erreur : {erreur}", file=sys.stderr)
